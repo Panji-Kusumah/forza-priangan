@@ -1,0 +1,8 @@
+{
+    "name": "Marhalah 2008 · Forza Youth Generation Memory Book",
+    "description": "Buku Kenangan Digital Alumni Marhalah 2008 Forza Youth Generation, Pondok Modern Darussalam Gontor. Lembaran kisah, arsip alumni, dan kenangan abadi.",
+    "requestFramePermissions": [],
+    "majorCapabilities": [
+        "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+    ]
+}

@@ -1,0 +1,353 @@
+@import "tailwindcss";
+
+/* Completely hide default side scrollbar on Mobile and PC */
+html, body {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  overflow-x: hidden;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+@layer utilities {
+  .font-cinzel {
+    font-family: 'Cinzel', serif;
+  }
+  .font-cinzel-decorative {
+    font-family: 'Cinzel Decorative', cursive, serif;
+  }
+  .font-cormorant {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+  .font-source-serif {
+    font-family: 'Source Serif 4', Georgia, serif;
+  }
+  .font-handwritten {
+    font-family: 'Caveat', cursive;
+  }
+  .font-arabic {
+    font-family: 'Amiri', serif;
+  }
+}
+
+/* 3D Perspective and Book Transforms */
+.perspective-2000 {
+  perspective: 2200px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Aged Parchment Paper Texture */
+.parchment-texture {
+  background-color: #fbf5e8;
+  background-image: 
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.4) 0%, rgba(235, 218, 185, 0.5) 75%, rgba(200, 175, 130, 0.75) 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(160, 130, 90, 0.04) 31px, rgba(160, 130, 90, 0.04) 32px);
+}
+
+.parchment-texture-left {
+  background-color: #faf4e6;
+  background-image: 
+    linear-gradient(to right, rgba(140, 105, 60, 0.25) 0%, rgba(180, 150, 105, 0.08) 12%, rgba(255, 255, 255, 0.3) 30%, rgba(220, 195, 155, 0.3) 95%, rgba(100, 70, 35, 0.4) 100%);
+}
+
+.parchment-texture-right {
+  background-color: #faf4e6;
+  background-image: 
+    linear-gradient(to left, rgba(140, 105, 60, 0.25) 0%, rgba(180, 150, 105, 0.08) 12%, rgba(255, 255, 255, 0.3) 30%, rgba(220, 195, 155, 0.3) 95%, rgba(100, 70, 35, 0.4) 100%);
+}
+
+/* Leather Texture Effect */
+.leather-dark {
+  background-color: #1f0d0e;
+  background-image: 
+    radial-gradient(circle at 50% 40%, rgba(70, 22, 28, 0.8) 0%, rgba(28, 10, 13, 0.95) 70%, rgba(12, 4, 6, 1) 100%),
+    repeating-radial-gradient(circle at 17% 32%, rgba(0,0,0,0.15) 0, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 4px);
+}
+
+/* Washi/Paper Tape Effect */
+.vintage-tape {
+  background: rgba(244, 234, 204, 0.75);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  border-left: 1px dashed rgba(180, 150, 110, 0.4);
+  border-right: 1px dashed rgba(180, 150, 110, 0.4);
+  backdrop-filter: blur(1px);
+}
+
+/* Custom Scrollbar for inner book panels if content overflows */
+.book-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.book-scroll::-webkit-scrollbar-track {
+  background: rgba(180, 150, 110, 0.1);
+}
+.book-scroll::-webkit-scrollbar-thumb {
+  background: rgba(160, 120, 70, 0.35);
+  border-radius: 3px;
+}
+.book-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 95, 45, 0.6);
+}
+
+/* Physical Realistic Paper Page-Turn Engine (Spring-Physics Parchment Leaf & Binding Snap) */
+@keyframes paperFlipNext {
+  0% {
+    transform: rotateY(0deg) skewY(0deg) scaleY(1) translateZ(0);
+  }
+  /* 1. Binding Tension Accumulation */
+  10% {
+    transform: rotateY(-14deg) skewY(-3.4deg) scaleY(1.02) translateZ(8px);
+  }
+  /* 2. The Binding Snap: elastic release */
+  24% {
+    transform: rotateY(-54deg) skewY(-5.8deg) scaleY(1.042) translateZ(36px);
+  }
+  /* 3. Airborne Sail: perpendicular 90° transit */
+  48% {
+    transform: rotateY(-90deg) skewY(-0.8deg) scaleY(1.048) translateZ(52px);
+  }
+  /* 4. Air Cushion Deceleration */
+  72% {
+    transform: rotateY(-144deg) skewY(4.6deg) scaleY(1.026) translateZ(26px);
+  }
+  /* 5. Impact & Spring Rebound */
+  88% {
+    transform: rotateY(-182.8deg) skewY(0.9deg) scaleY(1.008) translateZ(4px);
+  }
+  /* 6. Damped Counter-Oscillation */
+  95% {
+    transform: rotateY(-179.4deg) skewY(-0.3deg) scaleY(1.002) translateZ(1px);
+  }
+  /* 7. Settled Flush */
+  100% {
+    transform: rotateY(-180deg) skewY(0deg) scaleY(1) translateZ(0);
+  }
+}
+
+@keyframes paperFlipPrev {
+  0% {
+    transform: rotateY(0deg) skewY(0deg) scaleY(1) translateZ(0);
+  }
+  /* 1. Binding Tension Accumulation */
+  10% {
+    transform: rotateY(14deg) skewY(3.4deg) scaleY(1.02) translateZ(8px);
+  }
+  /* 2. The Binding Snap: elastic release */
+  24% {
+    transform: rotateY(54deg) skewY(5.8deg) scaleY(1.042) translateZ(36px);
+  }
+  /* 3. Airborne Sail: 90° transit */
+  48% {
+    transform: rotateY(90deg) skewY(0.8deg) scaleY(1.048) translateZ(52px);
+  }
+  /* 4. Air Cushion Deceleration */
+  72% {
+    transform: rotateY(144deg) skewY(-4.6deg) scaleY(1.026) translateZ(26px);
+  }
+  /* 5. Impact & Spring Rebound */
+  88% {
+    transform: rotateY(182.8deg) skewY(-0.9deg) scaleY(1.008) translateZ(4px);
+  }
+  /* 6. Damped Counter-Oscillation */
+  95% {
+    transform: rotateY(179.4deg) skewY(0.3deg) scaleY(1.002) translateZ(1px);
+  }
+  /* 7. Settled Flush */
+  100% {
+    transform: rotateY(180deg) skewY(0deg) scaleY(1) translateZ(0);
+  }
+}
+
+.animate-paper-flip-next {
+  animation: paperFlipNext var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+  will-change: transform;
+}
+
+.animate-paper-flip-prev {
+  animation: paperFlipPrev var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+  will-change: transform;
+}
+
+/* Dynamic Paper Sheen / Specular Light Reflection as sheet snaps & arches */
+@keyframes paperSheenNext {
+  0% {
+    opacity: 0;
+    background-position: 100% 0;
+  }
+  24% {
+    /* Highlights quickly flare as sheet snaps up into lighting */
+    opacity: 0.75;
+    background-position: 65% 0;
+  }
+  48% {
+    /* Maximum specular reflection perpendicular to book */
+    opacity: 0.95;
+    background-position: 30% 0;
+  }
+  75% {
+    opacity: 0.4;
+    background-position: 5% 0;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0% 0;
+  }
+}
+
+@keyframes paperSheenPrev {
+  0% {
+    opacity: 0;
+    background-position: 0% 0;
+  }
+  24% {
+    opacity: 0.75;
+    background-position: 35% 0;
+  }
+  48% {
+    opacity: 0.95;
+    background-position: 70% 0;
+  }
+  75% {
+    opacity: 0.4;
+    background-position: 95% 0;
+  }
+  100% {
+    opacity: 0;
+    background-position: 100% 0;
+  }
+}
+
+.animate-paper-sheen-next {
+  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.48) 42%, rgba(145,100,45,0.22) 58%, transparent 100%);
+  background-size: 200% 100%;
+  animation: paperSheenNext var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+}
+
+.animate-paper-sheen-prev {
+  background: linear-gradient(65deg, transparent 0%, rgba(255,255,255,0.48) 42%, rgba(145,100,45,0.22) 58%, transparent 100%);
+  background-size: 200% 100%;
+  animation: paperSheenPrev var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+}
+
+/* Ambient Occlusion & Cast Shadow on Stationary Pages */
+@keyframes underPageShadowNext {
+  0% {
+    opacity: 0;
+  }
+  24% {
+    /* Shadow deepens rapidly as paper snaps upwards */
+    opacity: 0.9;
+  }
+  48% {
+    opacity: 0.55;
+  }
+  80% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-under-page-shadow-next {
+  background: linear-gradient(to right, rgba(30, 15, 6, 0.45) 0%, rgba(30, 15, 6, 0.18) 35%, transparent 75%);
+  animation: underPageShadowNext var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+}
+
+@keyframes underPageShadowPrev {
+  0% {
+    opacity: 0;
+  }
+  24% {
+    opacity: 0.9;
+  }
+  48% {
+    opacity: 0.55;
+  }
+  80% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-under-page-shadow-prev {
+  background: linear-gradient(to left, rgba(30, 15, 6, 0.45) 0%, rgba(30, 15, 6, 0.18) 35%, transparent 75%);
+  animation: underPageShadowPrev var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+}
+
+@keyframes landingShadowNext {
+  0% {
+    opacity: 0;
+  }
+  48% {
+    opacity: 0.25;
+  }
+  75% {
+    /* Peak shadow as falling sheet nears destination stack */
+    opacity: 0.72;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-landing-shadow-next {
+  background: linear-gradient(to left, rgba(30, 15, 6, 0.45) 0%, rgba(30, 15, 6, 0.15) 30%, transparent 65%);
+  animation: landingShadowNext var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+}
+
+@keyframes landingShadowPrev {
+  0% {
+    opacity: 0;
+  }
+  48% {
+    opacity: 0.25;
+  }
+  75% {
+    opacity: 0.72;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-landing-shadow-prev {
+  background: linear-gradient(to right, rgba(30, 15, 6, 0.45) 0%, rgba(30, 15, 6, 0.15) 30%, transparent 65%);
+  animation: landingShadowPrev var(--page-duration, 0.62s) var(--page-bezier, cubic-bezier(0.18, 1.08, 0.24, 1.06)) forwards;
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
