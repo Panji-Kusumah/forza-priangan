@@ -1,5 +1,4 @@
 import { useEffect, useRef, RefObject } from 'react';
-import Hammer from 'hammerjs';
 
 interface UseSwipeGestureOptions {
   onSwipeLeft?: () => void;
@@ -32,45 +31,38 @@ export function useSwipeGesture<T extends HTMLElement>(
     const element = targetRef.current;
     if (!element || !enabled) return;
 
-    // Initialize Hammer on the target element with pan-y touch-action
-    const hammer = new Hammer(element, {
-      touchAction: 'pan-y',
+    let cancelled = false;
+    let hammer: HammerManager | undefined;
+
+    void import('hammerjs').then(({ default: Hammer }) => {
+      if (cancelled) return;
+
+      hammer = new Hammer(element, { touchAction: 'pan-y' });
+      hammer.get('swipe').set({
+        direction: Hammer.DIRECTION_HORIZONTAL,
+        threshold,
+        velocity,
+      });
+
+      const handleSwipeLeft = (e: HammerInput) => {
+        const target = e.target as HTMLElement | null;
+        if (target && target.closest('input, textarea, select, button, a, form, label, [contenteditable="true"], [data-no-swipe]')) return;
+        onSwipeLeftRef.current?.();
+      };
+
+      const handleSwipeRight = (e: HammerInput) => {
+        const target = e.target as HTMLElement | null;
+        if (target && target.closest('input, textarea, select, button, a, form, label, [contenteditable="true"], [data-no-swipe]')) return;
+        onSwipeRightRef.current?.();
+      };
+
+      hammer.on('swipeleft', handleSwipeLeft);
+      hammer.on('swiperight', handleSwipeRight);
     });
-
-    // Configure horizontal swipe recognizer
-    hammer.get('swipe').set({
-      direction: Hammer.DIRECTION_HORIZONTAL,
-      threshold,
-      velocity,
-    });
-
-    const handleSwipeLeft = (e: HammerInput) => {
-      const target = e.target as HTMLElement | null;
-      if (target && target.closest('input, textarea, select, button, a, [data-no-swipe]')) {
-        return;
-      }
-      if (onSwipeLeftRef.current) {
-        onSwipeLeftRef.current();
-      }
-    };
-
-    const handleSwipeRight = (e: HammerInput) => {
-      const target = e.target as HTMLElement | null;
-      if (target && target.closest('input, textarea, select, button, a, [data-no-swipe]')) {
-        return;
-      }
-      if (onSwipeRightRef.current) {
-        onSwipeRightRef.current();
-      }
-    };
-
-    hammer.on('swipeleft', handleSwipeLeft);
-    hammer.on('swiperight', handleSwipeRight);
 
     return () => {
-      hammer.off('swipeleft', handleSwipeLeft);
-      hammer.off('swiperight', handleSwipeRight);
-      hammer.destroy();
+      cancelled = true;
+      hammer?.destroy();
     };
   }, [targetRef, enabled, threshold, velocity]);
 }

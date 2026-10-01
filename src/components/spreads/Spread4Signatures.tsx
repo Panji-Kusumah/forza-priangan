@@ -5,7 +5,7 @@ import { Feather, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Spread4SignaturesProps {
   signatures: SignatureEntry[];
-  onAddSignature: (entry: Omit<SignatureEntry, 'id' | 'date'>) => void;
+  onAddSignature: (entry: Omit<SignatureEntry, 'id' | 'date'>) => Promise<void>;
   mobilePageSide?: 'left' | 'right';
 }
 
@@ -21,10 +21,11 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
   const [message, setMessage] = useState('');
   const [inkColor, setInkColor] = useState<SignatureEntry['inkColor']>('sepia');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Pagination for Left Page (2 signatures per leaf to prevent scrolling)
+  // Four inscriptions per physical page reduce unused parchment space.
   const [sigPageIndex, setSigPageIndex] = useState(0);
-  const sigsPerPage = 2;
+  const sigsPerPage = 4;
   const totalSigPages = Math.max(1, Math.ceil(signatures.length / sigsPerPage));
   const safeSigIndex = Math.min(sigPageIndex, totalSigPages - 1);
   const currentSignatures = signatures.slice(
@@ -32,13 +33,14 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
     safeSigIndex * sigsPerPage + sigsPerPage
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !message.trim()) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      onAddSignature({
+    setSubmitError(null);
+    try {
+      await onAddSignature({
         name: name.trim(),
         kunya: kunya.trim() || 'Sahabat 2008',
         consulat: consulat.trim() || 'Priangan',
@@ -48,14 +50,16 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
         rotation: (Math.random() - 0.5) * 2,
       });
 
-      // Reset
       setName('');
       setKunya('');
       setConsulat('');
       setMessage('');
+      setSigPageIndex(0);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Tanda tangan gagal disimpan.');
+    } finally {
       setIsSubmitting(false);
-      setSigPageIndex(0); // View latest signature leaf
-    }, 300);
+    }
   };
 
   const inkStyles: Record<SignatureEntry['inkColor'], string> = {
@@ -107,15 +111,15 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
             Coretan Tangan & Tanda Tangan
           </h2>
           <div className="font-source-serif italic text-[9.5px] sm:text-xs md:text-sm text-[#694827] truncate">
-            Lembaran autograph kenangan santri KMI 2008
+            Akun bersama angkatan · nama di bawah adalah atribusi tampilan
           </div>
           <div className="w-full my-0.5">
             <ChapterDivider arabic="تَوْقِيْعَاتُ الأَحِبَّة" />
           </div>
         </div>
 
-        {/* Inscriptions Feed (Paginated: exactly 2 per leaf) */}
-        <div className="my-auto py-1 flex-1 flex flex-col justify-around gap-1.5 overflow-hidden">
+        {/* Inscriptions Feed (Paginated: four per leaf) */}
+        <div className="flex flex-1 min-h-0 flex-col justify-evenly gap-1.5 overflow-y-auto book-scroll py-1">
           {currentSignatures.length === 0 ? (
             <div className="text-center py-6 text-xs sm:text-sm font-source-serif italic text-[#78593a]">
               Belum ada tanda tangan pada lembaran ini.
@@ -127,15 +131,15 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
                 style={{
                   transform: `rotate(${sig.rotation}deg)`,
                 }}
-                className={`p-1.5 sm:p-2.5 rounded-lg border-b-2 border-dashed bg-[#faf3e3]/90 transition-all shadow-xs ${
+                className={`shrink-0 p-1 sm:p-1.5 md:p-2 rounded-lg border-b-2 border-dashed bg-[#faf3e3]/90 transition-all shadow-xs ${
                   inkStyles[sig.inkColor] || inkStyles.sepia
                 }`}
               >
-                <p className="font-handwritten text-xs sm:text-base md:text-lg lg:text-xl leading-snug break-words line-clamp-3">
+                <p className="font-handwritten text-[11px] sm:text-sm md:text-base lg:text-lg leading-snug wrap-break-word line-clamp-3 md:line-clamp-2">
                   &ldquo;{sig.message}&rdquo;
                 </p>
 
-                <div className="mt-1 pt-0.5 border-t border-[#dfd0b5]/50 flex flex-wrap items-baseline justify-between gap-0.5 text-[9.5px] sm:text-xs">
+                <div className="mt-0.5 pt-0.5 border-t border-[#dfd0b5]/50 flex flex-wrap items-baseline justify-between gap-0.5 text-[9px] sm:text-[10px] md:text-[11px]">
                   <span className="font-cinzel font-bold tracking-wider truncate">
                     — {sig.name}{' '}
                     <span className="font-handwritten text-[10px] sm:text-xs font-bold opacity-90">
@@ -182,15 +186,18 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
         </div>
 
         {/* Ink Scribe Form */}
-        <form onSubmit={handleSubmit} className="space-y-1.5 sm:space-y-2 my-auto py-1 px-0.5 overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex flex-1 min-h-0 flex-col justify-evenly gap-2 px-0.5 py-2 overflow-y-auto book-scroll">
+          <p className="font-source-serif text-[10px] sm:text-xs italic text-[#785b3e]">
+            Nama di sini hanya atribusi tampilan; akun bersama tidak mengidentifikasi penulis.
+          </p>
           <div>
             <label className="block text-[9px] sm:text-[10px] md:text-xs font-cinzel tracking-wider text-[#694827] uppercase mb-0.5 font-bold">
-              Nama Lengkap
+              Nama untuk ditampilkan
             </label>
             <input
               type="text"
               required
-              placeholder="Nama lengkap antum"
+              placeholder="Nama tampilan, bukan identitas akun"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-2 py-0.5 text-[10px] sm:text-xs font-source-serif bg-[#f3ebd8] border border-[#bfa683] rounded text-[#3d2919] focus:outline-none focus:border-[#7d512a]"
@@ -266,7 +273,7 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
               placeholder="Tuliskan kalam kenangan..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full px-2 py-1 text-[11px] sm:text-xs font-handwritten text-sm sm:text-base bg-[#f3ebd8] border border-[#bfa683] rounded text-[#3d2919] focus:outline-none focus:border-[#7d512a] resize-none leading-snug"
+              className="w-full px-2 py-1 text-[11px] sm:text-base font-handwritten bg-[#f3ebd8] border border-[#bfa683] rounded text-[#3d2919] focus:outline-none focus:border-[#7d512a] resize-none leading-snug"
             />
           </div>
 
@@ -278,6 +285,7 @@ export const Spread4Signatures = memo<Spread4SignaturesProps>(({
             <Feather className="w-3.5 h-3.5 text-[#e5b565]" />
             <span>{isSubmitting ? 'Menggoreskan...' : 'Bubuhkan Tanda Tangan'}</span>
           </button>
+          {submitError && <p role="alert" className="font-source-serif text-xs text-red-900">{submitError}</p>}
         </form>
 
         {/* Right Footer */}

@@ -31,7 +31,7 @@ export const Spread1Story = memo<Spread1StoryProps>(({ mobilePageSide = 'left' }
             <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#b3832c]" />
             <span>Bab Pertama · Falsafah Lambang</span>
           </div>
-          <h2 className="font-cinzel text-xs sm:text-base md:text-xl lg:text-2xl font-black tracking-[0.08em] text-[#331c0a] uppercase leading-tight mt-0.5">
+          <h2 className="font-cinzel text-xs sm:text-base md:text-lg lg:text-xl font-black tracking-[0.08em] text-[#331c0a] uppercase leading-tight mt-0.5">
             Arti & Makna Lambang Konsulat Priangan
           </h2>
           <div className="font-source-serif italic text-[9.5px] sm:text-xs md:text-sm text-[#694827]">
@@ -62,11 +62,11 @@ export const Spread1Story = memo<Spread1StoryProps>(({ mobilePageSide = 'left' }
         </div>
 
         {/* 3 Elements Cards for Page 04 */}
-        <div className="my-auto py-1 flex flex-col justify-around gap-1.5 sm:gap-2">
+        <div className="flex flex-1 min-h-0 flex-col justify-evenly gap-1.5 py-1 sm:gap-2">
           {page4Elements.map((el) => (
             <div
               key={el.id}
-              className="p-1.5 sm:p-2 md:p-2.5 rounded-lg border bg-[#fcf7ee]/90 border-[#dacdb6] shadow-xs flex items-start gap-2"
+              className="flex shrink-0 items-start gap-2 rounded-lg border border-[#dacdb6] bg-[#fcf7ee]/90 p-1.5 shadow-xs sm:p-2 md:p-2.5"
             >
               <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-[#3c2210] text-[#fbf5e8] flex items-center justify-center font-cinzel font-bold text-[9px] sm:text-[11px] md:text-xs shrink-0 border border-[#c49852] shadow-xs">
                 {String(el.id).padStart(2, '0')}
@@ -111,7 +111,7 @@ export const Spread1Story = memo<Spread1StoryProps>(({ mobilePageSide = 'left' }
             <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#b3832c]" />
             <span>Bab Pertama · Warisan & Karakter</span>
           </div>
-          <h2 className="font-cinzel text-xs sm:text-base md:text-xl lg:text-2xl font-black tracking-[0.08em] text-[#331c0a] uppercase leading-tight mt-0.5">
+          <h2 className="font-cinzel text-xs sm:text-base md:text-lg lg:text-xl font-black tracking-[0.08em] text-[#331c0a] uppercase leading-tight mt-0.5">
             Keluhuran Tradisi & Tanah Priangan
           </h2>
           <div className="font-source-serif italic text-[9.5px] sm:text-xs md:text-sm text-[#694827]">
@@ -123,11 +123,11 @@ export const Spread1Story = memo<Spread1StoryProps>(({ mobilePageSide = 'left' }
         </div>
 
         {/* 4 Elements Cards for Page 05 */}
-        <div className="my-auto py-1 flex flex-col justify-around gap-1 sm:gap-1.5 md:gap-2">
+        <div className="flex flex-1 min-h-0 flex-col justify-evenly gap-1.5 py-1 sm:gap-2">
           {page5Elements.map((el) => (
             <div
               key={el.id}
-              className="p-1.5 sm:p-2 md:p-2.5 rounded-lg border bg-[#fcf7ee]/90 border-[#dacdb6] shadow-xs flex items-start gap-2"
+              className="flex shrink-0 items-start gap-2 rounded-lg border border-[#dacdb6] bg-[#fcf7ee]/90 p-1.5 shadow-xs sm:p-2 md:p-2.5"
             >
               <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-[#3c2210] text-[#fbf5e8] flex items-center justify-center font-cinzel font-bold text-[9px] sm:text-[11px] md:text-xs shrink-0 border border-[#c49852] shadow-xs">
                 {String(el.id).padStart(2, '0')}

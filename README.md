@@ -4,7 +4,7 @@
 [![React 19](https://img.shields.io/badge/React-19.0.1-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.x-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Vite](https://img.shields.io/badge/Vite-Build_Fast-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js-App_Router-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![Web Audio API](https://img.shields.io/badge/Web_Audio-Procedural_Sound-FF8800?style=flat-square)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
 [![Hammer.js](https://img.shields.io/badge/Gestures-Hammer.js-E05D44?style=flat-square)](https://hammerjs.github.io/)
 
@@ -14,7 +14,7 @@
 
 **Marhalah 2008 Memory Book** adalah aplikasi web kenangan (*digital archival memory book*) bertaraf museum yang dirancang khusus untuk mendokumentasikan jejak sejarah, falsafah lambang, direktori sahabat alumni, dan potret abadi santri angkatan **2008 — Forza Youth Generation**, khususnya keluarga besar **Konsulat Priangan** (Bandung Raya, Sumedang, Garut, Tasikmalaya, dan Ciamis), **Pondok Modern Darussalam Gontor**.
 
-Aplikasi ini memadukan estetika *skeuomorphic* buku antik bersampul kulit marun emas dengan rekayasa grafis dan fisika web modern: daun perkamen yang melengkung saat dibalik, sintesis audio gesekan kertas secara prosedural (*zero audio asset dependencies*), serta sistem navigasi sentuh responsif berbasis **Hammer.js**.
+Aplikasi ini memadukan estetika *skeuomorphic* buku antik bersampul kulit marun emas dengan rekayasa grafis dan fisika web modern: daun perkamen yang melengkung saat dibalik, sintesis audio gesekan kertas secara prosedural (*zero audio asset dependencies*), serta sistem navigasi sentuh responsif berbasis **Hammer.js**. Direktori, foto, autograph, dan coretan tersimpan di Supabase dengan satu akun bersama angkatan.
 
 ---
 
@@ -70,17 +70,26 @@ Aplikasi ini memadukan estetika *skeuomorphic* buku antik bersampul kulit marun 
 | **Framework** | **React 19** (`v19.0.1`) | Functional components, modern hooks, zero class legacy |
 | **Bahasa** | **TypeScript 5.x** | *Strict type safety* untuk seluruh model data dan props |
 | **Styling** | **Tailwind CSS v4** | Modern zero-runtime utility classes, responsive typography |
-| **Build Tool** | **Vite 8.x** | *Ultra-fast* HMR development & optimized production rollup |
+| **Framework / Build Tool** | **Next.js App Router** | Shell App Router dengan interaksi buku pada Client Component |
 | **Interaksi Sentuh** | **Hammer.js** | Gesture manager untuk usapan layar sentuh pada perangkat mobile |
 | **Audio Sintesis** | **Web Audio API** | Sintesis osilator & biquad noise buffer tanpa aset file MP3 eksternal |
 | **Ikonografi** | **Lucide React** | Ikon vektor ringan dan tajam |
-| **Penyimpanan Data** | **HTML5 LocalStorage** | Sinkronisasi data alumni, foto, dan tanda tangan secara persisten di browser |
+| **Database & Auth** | **Supabase PostgreSQL / Auth** | Data buku publik; satu akun bersama terverifikasi untuk menulis lewat RLS |
+| **Penyimpanan Foto** | **Supabase Storage** | File foto berada di bucket; database hanya menyimpan URL/path |
+| **Migrasi lokal** | **HTML5 LocalStorage** | Autograph/catatan lama dicoba migrasikan; arsip lama tetap dapat diekspor |
 
 ---
 
 ## 📂 Struktur Direktori Proyek
 
 ```plaintext
+├── app/
+│   ├── layout.tsx              # Metadata, font, dan stylesheet global
+│   └── page.tsx                # App Router entry untuk buku interaktif
+├── supabase/
+│   └── migrations/             # Skema PostgreSQL, RLS, dan Storage policies
+├── scripts/
+│   └── seed-mock-data.ts       # Seed mock tanpa menimpa data yang ada
 ├── public/
 │   ├── logokonsul.png           # Aset visual lambang resmi Konsulat Priangan
 │   └── ...
@@ -109,7 +118,7 @@ Aplikasi ini memadukan estetika *skeuomorphic* buku antik bersampul kulit marun 
 │   │   └── paperPhysics.ts      # Kalkulasi kurva dan pegas pembalikan lembaran
 │   ├── types.ts                 # Definisi tipe data TypeScript
 │   ├── App.tsx                  # Root state & controller transisi buku
-│   ├── main.tsx                 # Entry point aplikasi
+│   ├── lib/supabase.ts          # Browser client Supabase ber-kunci publik
 │   └── index.css                # Global styles, font imports & tekstur perkamen
 ├── package.json
 ├── metadata.json
@@ -121,8 +130,9 @@ Aplikasi ini memadukan estetika *skeuomorphic* buku antik bersampul kulit marun 
 ## 🚀 Panduan Menjalankan Proyek (Getting Started)
 
 ### Prasyarat:
-- **Node.js**: Versi `18.x` atau lebih baru
-- **NPM**: Versi `9.x` atau lebih baru
+- **Node.js**: Versi `20.9` atau lebih baru
+- **NPM**: Versi `10.x` atau lebih baru
+- Proyek Supabase
 
 ### 1. Kloning Repositori
 ```bash
@@ -135,19 +145,50 @@ cd marhalah-2008-memory-book
 npm install
 ```
 
-### 3. Jalankan Server Pengembangan (Dev Mode)
+### 3. Konfigurasi Supabase
+Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` dari pengaturan API proyek Supabase. Isi `NEXT_PUBLIC_SHARED_ACCOUNT_USERNAME` sebagai ID login dan `NEXT_PUBLIC_SHARED_ACCOUNT_EMAIL` dengan email Auth akun bersama. Email hanya dipakai sebagai pemetaan internal ID ke Supabase Auth; UI login meminta ID dan password saja. Jangan simpan password atau secret key dalam source code.
+
+Terapkan semua file SQL di `supabase/migrations/` secara berurutan melalui SQL Editor Supabase. Migration terakhir mengganti policy per-alumni dengan whitelist satu akun bersama, menghapus relasi akun individual, membuat tabel `signatures` dan `memory_notes`, serta menyiapkan bucket `memory-images`. Direktori, foto, autograph, dan coretan dapat dibaca publik; hanya akun bersama yang dapat menulis.
+
+Di Supabase Auth, nonaktifkan **Allow new users to sign up**, aktifkan Email/Password dan konfirmasi email. Buat satu user di **Authentication → Users → Add user** memakai email akun bersama, atur password langsung di Dashboard, lalu konfirmasi email. Ambil UUID user tersebut dan daftarkan pada konfigurasi privat dengan SQL Editor:
+```sql
+insert into private.shared_account_config (singleton, user_id)
+select true, id
+from auth.users
+where email = 'alamat-akun-bersama@example.com'
+   and email_confirmed_at is not null
+on conflict (singleton) do update set user_id = excluded.user_id;
+```
+Ganti email contoh dengan alamat akun bersama. Tabel konfigurasi tidak dapat dibaca atau ditulis oleh role browser. Aplikasi menerima ID `knzt`, lalu memetakannya ke email bersama dari environment; Supabase tetap memvalidasi password. Aplikasi tidak menyediakan registrasi, role management, maupun dashboard admin.
+
+Untuk mengisi data awal `mockData.ts`, tambahkan `SUPABASE_SERVICE_ROLE_KEY` hanya ke `.env.local` saat menjalankan skrip seed lokal:
+```bash
+npm run seed:mock
+```
+Skrip menambahkan baris mock yang belum ada dan tidak memperbarui atau menghapus data tersimpan. Service-role key hanya diperlukan untuk seed satu kali; jangan pasang key ini di browser atau environment deploy.
+
+Backup LocalStorage lama tidak dihapus. Buka buku, pilih **Pita Bab** lalu ikon akun untuk mengekspornya. Saat akun bersama pertama kali masuk, autograph dan coretan lokal yang terkait dengan foto yang sudah ada dicoba dimigrasikan dengan ID idempotent. Foto lokal tanpa pasangan row database/Storage tetap tersedia di arsip ekspor.
+
+Perubahan profil, foto, autograph, dan coretan baru disimpan ke PostgreSQL/Storage. Foto kenangan kolektif ditautkan sebagai kontribusi Forza Youth, bukan ke satu alumni. Karena semua perubahan memakai satu akun bersama, sistem tidak dapat memastikan alumni mana yang melakukan perubahan; nama pada autograph/catatan hanya atribusi tampilan yang diketik pengguna.
+
+### 4. Jalankan Server Pengembangan (Dev Mode)
 ```bash
 npm run dev
 ```
-Aplikasi akan aktif di `http://localhost:3000`.
+Aplikasi aktif di `http://localhost:3000`.
 
-### 4. Build untuk Lingkungan Produksi
+Masuk memakai ID `knzt` dan password akun bersama. Jika autentikasi ditolak, pastikan email user sudah terkonfirmasi dan UUID-nya terdaftar di `private.shared_account_config`.
+
+### Deploy
+Deploy project Next.js (misalnya ke Vercel), lalu set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SHARED_ACCOUNT_USERNAME`, dan `NEXT_PUBLIC_SHARED_ACCOUNT_EMAIL` pada environment production. Atur **Site URL** dan redirect URL Supabase Auth ke domain deploy. Jangan tambahkan password atau `SUPABASE_SERVICE_ROLE_KEY` ke environment browser/`NEXT_PUBLIC_*`; service-role key tidak dibutuhkan runtime.
+
+### 5. Build untuk Lingkungan Produksi
 ```bash
 npm run build
 ```
-Hasil build optimal akan tersimpan di direktori `dist/`.
+Build Next.js tersimpan di direktori `.next/`.
 
-### 5. Validasi Tipe & Kode (Lint)
+### 6. Validasi Tipe & Kode
 ```bash
 npm run lint
 ```

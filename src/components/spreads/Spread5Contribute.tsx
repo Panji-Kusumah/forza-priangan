@@ -1,26 +1,32 @@
-import React, { useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import { Alumnus, MemoryPhoto } from '../../types';
 import { CornerFiligree, ChapterDivider, ArchivalStamp } from '../Ornaments';
-import { Upload, Camera, UserPlus, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Upload, Camera, UserPlus, CheckCircle2 } from 'lucide-react';
 import { playQuillSound } from '../../utils/audio';
 
 interface Spread5ContributeProps {
-  onAddAlumnus: (alumnus: Alumnus) => void;
-  onAddMemoryPhoto: (photo: MemoryPhoto) => void;
+  alumniList: Alumnus[];
+  onAddAlumnus: (alumnus: Alumnus, file?: File, editingId?: string) => Promise<void>;
+  onAddMemoryPhoto: (photo: MemoryPhoto, file?: File) => Promise<void>;
+  isAuthenticated: boolean;
+  onRequestAuthentication: () => void;
   onNavigate: (spreadIndex: number) => void;
-  onCloseToBackCover?: () => void;
   mobilePageSide?: 'left' | 'right';
 }
 
 export const Spread5Contribute = memo<Spread5ContributeProps>(({
+  alumniList,
   onAddAlumnus,
   onAddMemoryPhoto,
+  isAuthenticated,
+  onRequestAuthentication,
   onNavigate,
-  onCloseToBackCover,
   mobilePageSide = 'left',
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'photo'>('profile');
   const [submitted, setSubmitted] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [editingAlumnusId, setEditingAlumnusId] = useState('');
 
   // Profile Form States
   const [fullName, setFullName] = useState('');
@@ -30,9 +36,8 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
   const [city, setCity] = useState('');
   const [occupation, setOccupation] = useState('');
   const [quote, setQuote] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState(
-    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=320&auto=format&fit=crop&q=80'
-  );
+  const [profilePhoto, setProfilePhoto] = useState('/logokonsul.png');
+  const [profileFile, setProfileFile] = useState<File | null>(null);
 
   // Photo Form States
   const [photoTitle, setPhotoTitle] = useState('');
@@ -41,36 +46,67 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
   const [photoLocation, setPhotoLocation] = useState('Konsulat Priangan / Gontor');
   const [photoCategory, setPhotoCategory] = useState<MemoryPhoto['category']>('Konsulat Priangan');
   const [uploaderName, setUploaderName] = useState('');
-  const [memoryPhotoUrl, setMemoryPhotoUrl] = useState(
-    'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=700&auto=format&fit=crop&q=80'
-  );
+  const [memoryPhotoUrl, setMemoryPhotoUrl] = useState('/logokonsul.png');
+  const [memoryFile, setMemoryFile] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoFileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const selectedAlumnus = alumniList.find((alumnus) => alumnus.id === editingAlumnusId);
+    if (!selectedAlumnus) {
+      setFullName('');
+      setKunya('');
+      setPrianganRegion('Bandung Raya');
+      setRayonGontor('Gedung Saudi Lt. 2');
+      setCity('');
+      setOccupation('');
+      setQuote('');
+      setProfilePhoto('/logokonsul.png');
+      setProfileFile(null);
+      return;
+    }
+    setFullName(selectedAlumnus.fullName);
+    setKunya(selectedAlumnus.kunya);
+    setPrianganRegion(selectedAlumnus.prianganRegion);
+    setRayonGontor(selectedAlumnus.rayonGontor ?? selectedAlumnus.dormitory ?? '');
+    setCity(selectedAlumnus.city);
+    setOccupation(selectedAlumnus.occupation);
+    setQuote(selectedAlumnus.quote);
+    setProfilePhoto(selectedAlumnus.photoUrl);
+    setProfileFile(null);
+  }, [alumniList, editingAlumnusId]);
+
+  useEffect(() => () => {
+    if (profilePhoto.startsWith('blob:')) URL.revokeObjectURL(profilePhoto);
+    if (memoryPhotoUrl.startsWith('blob:')) URL.revokeObjectURL(memoryPhotoUrl);
+  }, [profilePhoto, memoryPhotoUrl]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'profile' | 'memory') => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        if (target === 'profile') {
-          setProfilePhoto(result);
-        } else {
-          setMemoryPhotoUrl(result);
-        }
-      };
-      reader.readAsDataURL(file);
+      const preview = URL.createObjectURL(file);
+      if (target === 'profile') {
+        setProfileFile(file);
+        setProfilePhoto(preview);
+      } else {
+        setMemoryFile(file);
+        setMemoryPhotoUrl(preview);
+      }
     }
   };
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) return;
+    if (!isAuthenticated) {
+      setSubmitError('Masuk dengan akun terverifikasi untuk menyimpan profil.');
+      onRequestAuthentication();
+      return;
+    }
 
-    playQuillSound();
     const newAlumnus: Alumnus = {
-      id: `alm-priangan-${Date.now()}`,
+      id: editingAlumnusId || `alm-priangan-${Date.now()}`,
       fullName: fullName.trim(),
       kunya: kunya.trim() || 'Sahabat 2008',
       consulat: 'Konsulat Priangan',
@@ -85,18 +121,30 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
       favoriteMemory: quote.trim(),
     };
 
-    onAddAlumnus(newAlumnus);
-    setSubmitted('Nama sahabat berhasil dicatat & diurutkan sesuai abjad!');
-    setTimeout(() => {
-      onNavigate(3);
-    }, 1200);
+    setSubmitError(null);
+    try {
+      await onAddAlumnus(newAlumnus, profileFile ?? undefined, editingAlumnusId || undefined);
+      playQuillSound();
+      setSubmitted('Profil sahabat berhasil disimpan.');
+      setTimeout(() => onNavigate(3), 1200);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Profil gagal disimpan.');
+    }
   };
 
-  const handlePhotoSubmit = (e: React.FormEvent) => {
+  const handlePhotoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!photoTitle.trim()) return;
+    if (!isAuthenticated) {
+      setSubmitError('Masuk dengan akun terverifikasi untuk mengunggah foto.');
+      onRequestAuthentication();
+      return;
+    }
+    if (!memoryFile) {
+      setSubmitError('Pilih berkas foto dari perangkat sebelum menyimpan.');
+      return;
+    }
 
-    playQuillSound();
     const newPhoto: MemoryPhoto = {
       id: `mem-custom-${Date.now()}`,
       title: photoTitle.trim(),
@@ -111,11 +159,15 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
       marginNotes: [],
     };
 
-    onAddMemoryPhoto(newPhoto);
-    setSubmitted('Foto kenangan berhasil direkatkan!');
-    setTimeout(() => {
-      onNavigate(4);
-    }, 1200);
+    setSubmitError(null);
+    try {
+      await onAddMemoryPhoto(newPhoto, memoryFile);
+      playQuillSound();
+      setSubmitted('Foto kenangan berhasil disimpan.');
+      setTimeout(() => onNavigate(4), 1200);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Foto gagal disimpan.');
+    }
   };
 
   return (
@@ -143,16 +195,16 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
           </div>
         </div>
 
-        <div className="py-1 my-auto flex-1 flex flex-col justify-around gap-1.5 px-0.5 overflow-hidden">
-          <p className="text-[10px] sm:text-xs md:text-sm font-source-serif leading-relaxed text-[#402c1b]">
+        <div className="flex flex-1 min-h-0 flex-col justify-evenly gap-3 px-0.5 py-2 overflow-y-auto book-scroll">
+          <p className="text-[11px] sm:text-sm md:text-base font-source-serif leading-relaxed text-[#402c1b]">
             Buku kenangan ini bukan milik segelintir orang. Sebagai santri Marhalah 2008 Forza Youth, namamu, suaramu, dan potret kenanganmu adalah bagian yang tak terpisahkan dari sejarah besar ini.
           </p>
 
           {/* Mode Switcher */}
-          <div className="p-0.5 sm:p-1 rounded-lg bg-[#ece0c8] border border-[#cfbe9e] flex gap-1 shrink-0">
+          <div className="p-1 sm:p-1.5 rounded-lg bg-[#ece0c8] border border-[#cfbe9e] flex gap-1 shrink-0">
             <button
               onClick={() => setActiveTab('profile')}
-              className={`flex-1 py-0.5 sm:py-1 px-1.5 rounded text-[10px] sm:text-xs font-cinzel font-bold tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              className={`flex-1 py-1 sm:py-1.5 px-1.5 rounded text-[10px] sm:text-xs font-cinzel font-bold tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
                 activeTab === 'profile'
                   ? 'bg-[#402511] text-[#fbeed4] shadow-xs'
                   : 'text-[#5e432a] hover:text-[#321c0b]'
@@ -163,7 +215,7 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
             </button>
             <button
               onClick={() => setActiveTab('photo')}
-              className={`flex-1 py-0.5 sm:py-1 px-1.5 rounded text-[10px] sm:text-xs font-cinzel font-bold tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              className={`flex-1 py-1 sm:py-1.5 px-1.5 rounded text-[10px] sm:text-xs font-cinzel font-bold tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${
                 activeTab === 'photo'
                   ? 'bg-[#402511] text-[#fbeed4] shadow-xs'
                   : 'text-[#5e432a] hover:text-[#321c0b]'
@@ -174,7 +226,7 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
             </button>
           </div>
 
-          <div className="p-1.5 sm:p-2 rounded-lg border border-dashed border-[#bda682] bg-[#fbf5e8]/80 text-[9.5px] sm:text-xs font-source-serif italic text-[#593c20] leading-snug">
+          <div className="p-2 sm:p-2.5 rounded-lg border border-dashed border-[#bda682] bg-[#fbf5e8]/80 text-[10px] sm:text-xs font-source-serif italic text-[#593c20] leading-snug">
             {activeTab === 'profile'
               ? 'Daftarkan nama & data sahabat yang belum tercatat. Seluruh kolom tersusun rapi abjad A–Z di Bab II tanpa menimpa data yang telah ada.'
               : 'Formulir ini akan menempelkan foto kenangan lama/baru ke Bab III (Album Kenangan) agar sahabat lain dapat membubuhi coretan pinggir.'}
@@ -184,6 +236,11 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
             <div className="p-1.5 rounded-lg bg-emerald-950/15 border border-emerald-800/40 text-emerald-950 font-cinzel text-[10px] sm:text-xs flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
               <span className="font-semibold">{submitted}</span>
+            </div>
+          )}
+          {submitError && (
+            <div role="alert" className="p-1.5 rounded bg-red-950/10 border border-red-800/40 text-red-950 font-source-serif text-[10px] sm:text-xs">
+              {submitError}
             </div>
           )}
         </div>
@@ -205,17 +262,31 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
 
         {activeTab === 'profile' ? (
           /* Profile Form */
-          <form onSubmit={handleProfileSubmit} className="my-auto py-0.5 flex-1 flex flex-col justify-between overflow-hidden">
+          <form onSubmit={handleProfileSubmit} className="flex flex-1 min-h-0 flex-col justify-evenly gap-1.5 py-2 overflow-y-auto book-scroll">
             <div className="shrink-0 flex items-center justify-between pb-0.5 border-b border-[#dfd0b5]/80">
               <div className="min-w-0">
                 <span className="text-[10px] sm:text-xs font-cinzel font-black text-[#502e11] uppercase tracking-wider block truncate">
                   Formulir Sijillul Asma&apos; Sahabat
                 </span>
                 <span className="text-[8.5px] sm:text-[9.5px] font-source-serif italic text-[#755535] truncate block">
-                  Lengkapi biodata sahabat · Tersusun rapi abjad A–Z
+                  {editingAlumnusId ? 'Perbarui data alumni terpilih' : 'Tambahkan alumni ke sijillul asma'}
                 </span>
               </div>
             </div>
+
+            <label className="block shrink-0 text-[8.5px] sm:text-[10px] font-cinzel tracking-wider text-[#694827] uppercase font-bold">
+              Profil alumni
+              <select
+                value={editingAlumnusId}
+                onChange={(event) => setEditingAlumnusId(event.target.value)}
+                className="mt-0.5 w-full px-1.5 py-1 text-[10px] sm:text-xs font-source-serif bg-[#f3ebd8] border border-[#bfa683] rounded text-[#3d2919] normal-case tracking-normal"
+              >
+                <option value="">Tambah alumni baru</option>
+                {alumniList.map((alumnus) => (
+                  <option key={alumnus.id} value={alumnus.id}>{alumnus.fullName}</option>
+                ))}
+              </select>
+            </label>
 
             {/* Photo Avatar + Nama Lengkap & Laqob */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 my-1 shrink-0">
@@ -353,12 +424,12 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
               className="w-full py-1 sm:py-1.5 bg-[#422610] hover:bg-[#5e3819] text-[#fbf5e8] rounded font-cinzel text-[10.5px] sm:text-xs font-bold tracking-wider uppercase transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0 mt-1"
             >
               <UserPlus className="w-3.5 h-3.5 text-[#e5b565]" />
-              <span>Daftarkan Sahabat</span>
+              <span>{editingAlumnusId ? 'Simpan Perubahan Alumni' : 'Tambahkan Alumni'}</span>
             </button>
           </form>
         ) : (
           /* Photo Form */
-          <form onSubmit={handlePhotoSubmit} className="my-auto py-0.5 flex-1 flex flex-col justify-between overflow-hidden">
+          <form onSubmit={handlePhotoSubmit} className="flex flex-1 min-h-0 flex-col justify-evenly gap-1.5 py-2 overflow-y-auto book-scroll">
             <div className="shrink-0 flex items-center justify-between pb-0.5 border-b border-[#dfd0b5]/80">
               <div className="min-w-0">
                 <span className="text-[10px] sm:text-xs font-cinzel font-black text-[#502e11] uppercase tracking-wider block truncate">
@@ -373,7 +444,7 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
             {/* Photo Upload Area */}
             <div
               onClick={() => photoFileInputRef.current?.click()}
-              className="relative aspect-[16/9] max-h-[14vh] sm:max-h-[18vh] bg-[#ebd9bd] border-2 border-dashed border-[#a68661] rounded cursor-pointer flex flex-col items-center justify-center overflow-hidden shrink-0 group hover:border-[#523315] my-1"
+              className="relative aspect-video max-h-[14vh] sm:max-h-[18vh] bg-[#ebd9bd] border-2 border-dashed border-[#a68661] rounded cursor-pointer flex flex-col items-center justify-center overflow-hidden shrink-0 group hover:border-[#523315] my-1"
             >
               <img
                 src={memoryPhotoUrl}
@@ -462,19 +533,7 @@ export const Spread5Contribute = memo<Spread5ContributeProps>(({
           <span className="font-handwritten text-[10.5px] sm:text-xs text-[#704a25] truncate">
             *Tersimpan dalam arsip marhalah
           </span>
-          <div className="flex items-center gap-1.5">
-            {onCloseToBackCover && (
-              <button
-                onClick={onCloseToBackCover}
-                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded border border-[#9c6f37] bg-gradient-to-r from-[#ebdcc0] to-[#dfcead] hover:from-[#dfcead] hover:to-[#ceb88f] text-[#3d240e] font-cinzel text-[9.5px] sm:text-[10.5px] font-bold shadow-xs cursor-pointer transition-all shrink-0"
-                title="Halaman Terakhir · Tutup ke Sampul Belakang"
-              >
-                <span>Sampul Belakang</span>
-                <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7a481c]" />
-              </button>
-            )}
-            <span className="shrink-0 ml-1">Hal. 15</span>
-          </div>
+          <span className="shrink-0 ml-1">Hal. 15</span>
         </div>
       </div>
     </div>
